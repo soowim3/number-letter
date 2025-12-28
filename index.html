@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>숫글 변환기 ( Soowim 제작 )</title>
+    
+    <link rel="shortcut icon" href="icon.ico" type="image/x-icon">
+    <link rel="icon" href="icon.ico" type="image/x-icon">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: #121212; 
+            color: #e0e0e0; 
+            line-height: 1.6; 
+            display: flex; 
+            justify-content: center; 
+            padding: 20px; 
+        }
+        .container { width: 100%; max-width: 600px; margin-top: 20px; position: relative; padding-bottom: 60px; }
+        h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 2rem; text-align: center; letter-spacing: -0.5px; color: #ffffff; }
+        .section { margin-bottom: 1.5rem; }
+        label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 8px; color: #888; text-transform: uppercase; }
+        textarea { 
+            width: 100%; 
+            height: 140px; 
+            padding: 14px; 
+            border: 1px solid #333; 
+            border-radius: 12px; 
+            font-size: 16px; 
+            background-color: #1e1e1e; 
+            color: #ffffff;
+            transition: border-color 0.2s; 
+            resize: none;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+        textarea:focus { outline: none; border-color: #555; }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+        button { 
+            padding: 16px; 
+            border: none; 
+            border-radius: 12px; 
+            background-color: #ffffff; 
+            color: #000000; 
+            font-size: 0.95rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: background-color 0.2s; 
+        }
+        button.secondary { background-color: #333; color: #ffffff; }
+        button:active { opacity: 0.8; }
+        .result-label { margin-top: 2rem; border-top: 1px solid #222; padding-top: 1.5rem; }
+        #result { 
+            min-height: 100px; 
+            white-space: pre-wrap; 
+            word-break: break-all; 
+            font-size: 1.15rem; 
+            font-weight: 500; 
+            color: #ffffff; 
+            padding: 10px 0;
+            letter-spacing: 0.5px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.8rem;
+            color: #555;
+            letter-spacing: 1px;
+        }
+        @media (max-width: 480px) {
+            body { padding: 15px; }
+            h1 { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔐 // 숫글 변환기</h1>
+    
+    <div class="section">
+        <label>Input</label>
+        <textarea id="input" placeholder="내용을 입력하세요..."></textarea>
+    </div>
+
+    <div class="btn-group">
+        <button onclick="toNum()">한글 → 숫글</button>
+        <button class="secondary" onclick="toKor()">숫글 → 한글</button>
+    </div>
+
+    <div class="section result-label">
+        <label>Result</label>
+        <div id="result"></div>
+    </div>
+
+    <footer>Soowim 제작</footer>
+</div>
+
+<script>
+// (이전과 동일한 JavaScript 로직)
+const initialMap = {'ㄱ':'1','ㄲ':'011','ㄴ':'2','ㄷ':'3','ㄸ':'033','ㄹ':'4','ㅁ':'5','ㅂ':'6','ㅃ':'066','ㅅ':'7','ㅆ':'077','ㅇ':'8','ㅈ':'9','ㅉ':'099','ㅊ':'10','ㅋ':'11','ㅌ':'12','ㅍ':'13','ㅎ':'14'};
+const vowelMap = {'ㅏ':['01'],'ㅐ':['102'],'ㅑ':['02'],'ㅒ':['103'],'ㅓ':['03'],'ㅔ':['104'],'ㅕ':['04'],'ㅖ':['105'],'ㅗ':['05'],'ㅘ':['05','01'],'ㅙ':['05','102'],'ㅚ':['05','101'],'ㅛ':['06'],'ㅜ':['07'],'ㅝ':['07','03'],'ㅞ':['07','104'],'ㅟ':['07','101'],'ㅠ':['08'],'ㅡ':['09'],'ㅢ':['09','101'],'ㅣ':['101']};
+const finalMap = ['','1','011','17','2','29','214','3','4','41','45','46','47','412','413','414','5','6','67','7','077','8','9','10','11','12','13','14'];
+const CHOSUNG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const JUNGSUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+
+function wrapZero(str) { return '0' + str + '0'; }
+function unwrapZero(str) {
+    if (str.startsWith('0') && str.endsWith('0')) return str.substring(1, str.length - 1);
+    return str;
+}
+
+function toNum() {
+    const text = document.getElementById('input').value;
+    let result = [];
+    for (let char of text) {
+        let code = char.charCodeAt(0);
+        if (code >= 0xAC00 && code <= 0xD7A3) {
+            let n = code - 0xAC00;
+            let jong = n % 28;
+            let jung = ((n - jong) / 28) % 21;
+            let cho = Math.floor(((n - jong) / 28) / 21);
+            let parts = [wrapZero(initialMap[CHOSUNG[cho]])];
+            vowelMap[JUNGSUNG[jung]].forEach(v => parts.push(wrapZero(v)));
+            if (jong > 0) parts.push(wrapZero(finalMap[jong]));
+            result.push(parts.join(','));
+        } else { result.push(char); }
+    }
+    let output = "";
+    for(let i=0; i<result.length; i++) {
+        output += result[i];
+        if(i < result.length -1 && result[i] !== " " && result[i+1] !== " " && !/[\n\r]/.test(result[i]) && !/[\n\r]/.test(result[i+1])) {
+            if(result[i].includes('0')) output += ".";
+        }
+    }
+    document.getElementById('result').innerText = output;
+}
+
+function toKor() {
+    const text = document.getElementById('input').value;
+    const revInitial = Object.fromEntries(Object.entries(initialMap).map(([k,v]) => [v, CHOSUNG.indexOf(k)]));
+    const revVowel = Object.fromEntries(Object.entries(vowelMap).map(([k,v]) => [v.join(','), JUNGSUNG.indexOf(k)]));
+    const revFinal = Object.fromEntries(finalMap.map((v, i) => [v, i]));
+    let tokens = []; let temp = "";
+    for(let char of text) {
+        if(char === '.' || char === ' ' || char === '\n') {
+            if(temp) tokens.push(temp);
+            tokens.push(char); temp = "";
+        } else { temp += char; }
+    }
+    if(temp) tokens.push(temp);
+    let finalStr = "";
+    for(let token of tokens) {
+        if(['.', ' ', '\n'].includes(token)) { if(token !== '.') finalStr += token; continue; }
+        let parts = token.split(',').map(p => unwrapZero(p));
+        try {
+            let choIdx = revInitial[parts[0]];
+            let vStr = parts[1]; let vStep = 1;
+            if(parts.length >= 3 && revVowel[parts[1]+','+parts[2]] !== undefined) {
+                vStr = parts[1]+','+parts[2]; vStep = 2;
+            }
+            let jungIdx = revVowel[vStr];
+            let jongIdx = 0;
+            if(parts[1+vStep]) jongIdx = revFinal[parts[1+vStep]] || 0;
+            if(choIdx !== undefined && jungIdx !== undefined) {
+                finalStr += String.fromCharCode(0xAC00 + (choIdx * 588) + (jungIdx * 28) + jongIdx);
+            } else { finalStr += token; }
+        } catch(e) { finalStr += token; }
+    }
+    document.getElementById('result').innerText = finalStr;
+}
+</script>
+
+</body>
+</html>
