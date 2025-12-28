@@ -105,21 +105,36 @@
             opacity: 0.8;
         }
 
-        .result-label {
+        .result-container {
             margin-top: 2rem;
             border-top: 1px solid #222;
             padding-top: 1.5rem;
+            position: relative;
         }
 
         #result {
-            min-height: 100px;
+            min-height: 80px;
             white-space: pre-wrap;
             word-break: break-all;
             font-size: 1.15rem;
             font-weight: 500;
             color: #ffffff;
             padding: 10px 0;
+            padding-right: 60px;
             letter-spacing: 0.5px;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 1.5rem;
+            right: 0;
+            padding: 8px 12px;
+            font-size: 0.75rem;
+            background-color: #444;
+            color: #fff;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
         }
 
         footer {
@@ -147,8 +162,9 @@
             <button class="secondary" onclick="toKor()">숫글 → 한글</button>
         </div>
 
-        <div class="section result-label">
+        <div class="result-container">
             <label>Result</label>
+            <button class="copy-btn" onclick="copyResult()">Copy</button>
             <div id="result"></div>
         </div>
 
@@ -166,7 +182,6 @@
             const text = document.getElementById('input').value;
             let tokens = [];
             let i = 0;
-
             while (i < text.length) {
                 let char = text[i];
                 let code = char.charCodeAt(0);
@@ -180,126 +195,88 @@
                     tokens.push({ type: 'hangul', value: parts.join(',') });
                 } else if (/[0-9]/.test(char)) {
                     let numStr = "";
-                    while (i < text.length && /[0-9]/.test(text[i])) {
-                        numStr += text[i];
-                        i++;
-                    }
+                    while (i < text.length && /[0-9]/.test(text[i])) { numStr += text[i]; i++; }
                     tokens.push({ type: 'number', value: '0' + numStr + '0' });
                     continue;
-                } else {
-                    tokens.push({ type: 'other', value: char });
-                }
+                } else { tokens.push({ type: 'other', value: char }); }
                 i++;
             }
-
-            let finalOutput = "";
+            let output = "";
             for (let j = 0; j < tokens.length; j++) {
-                finalOutput += tokens[j].value;
+                output += tokens[j].value;
                 if (j < tokens.length - 1) {
-                    let curr = tokens[j];
-                    let next = tokens[j + 1];
-
-                    // 1. 한글 음절과 한글 음절 사이는 마침표(.)
-                    if (curr.type === 'hangul' && next.type === 'hangul') {
-                        finalOutput += ".";
-                    }
-                    // 2. 숫자(0120)와 한글 음절 사이는 쉼표(,)로 연결 (예: 0120,6,03,2)
-                    else if (curr.type === 'number' && next.type === 'hangul') {
-                        finalOutput += ",";
-                    }
-                    else if (curr.type === 'hangul' && next.type === 'number') {
-                        finalOutput += ",";
-                    }
+                    let curr = tokens[j], next = tokens[j + 1];
+                    if (curr.type === 'hangul' && next.type === 'hangul') output += ".";
+                    else if (curr.type === 'number' && next.type === 'hangul') output += ",";
+                    else if (curr.type === 'hangul' && next.type === 'number') output += ",";
                 }
             }
-            document.getElementById('result').innerText = finalOutput;
+            document.getElementById('result').innerText = output;
         }
 
         function toKor() {
-            let text = document.getElementById('input').value;
+            let input = document.getElementById('input').value;
+            input = input.replace(/0([0-9]+)0/g, '$1');
             const revInitial = Object.fromEntries(Object.entries(initialMap).map(([k, v]) => [v, CHOSUNG.indexOf(k)]));
             const revVowel = Object.fromEntries(Object.entries(vowelMap).map(([k, v]) => [v.join(','), JUNGSUNG.indexOf(k)]));
             const revFinal = Object.fromEntries(finalMap.map((v, i) => [v, i]));
 
-            // 숫자 뭉치 복원 (0120 -> 12)
-            text = text.replace(/0([0-9]+)0/g, '$1');
-
-            let tokens = []; let temp = "";
-            for (let char of text) {
-                if (char === '.' || char === ' ' || char === '\n') {
-                    if (temp) tokens.push({ type: 'code', value: temp });
-                    tokens.push({ type: 'sep', value: char });
-                    temp = "";
-                } else if (/[0-9,]/.test(char)) {
-                    temp += char;
-                } else {
-                    if (temp) tokens.push({ type: 'code', value: temp });
-                    tokens.push({ type: 'other', value: char });
-                    temp = "";
-                }
-            }
-            if (temp) tokens.push({ type: 'code', value: temp });
-
             let finalStr = "";
-            for (let token of tokens) {
-                if (token.type === 'sep') {
-                    if (token.value !== '.') finalStr += token.value;
-                    continue;
-                }
-                if (token.type === 'other') {
-                    finalStr += token.value;
-                    continue;
-                }
+            let blocks = input.split(/([ \n])/);
 
-                let parts = token.value.split(',');
-                // 만약 순수 숫자라면 그냥 출력
-                if (parts.length === 1 && !isNaN(parts[0])) {
-                    finalStr += parts[0];
-                    continue;
-                }
+            blocks.forEach(block => {
+                if (block === " " || block === "\n") { finalStr += block; return; }
 
-                try {
-                    // 한글 조합 시도
-                    let currentIdx = 0;
-                    while (currentIdx < parts.length) {
-                        let choIdx = revInitial[parts[currentIdx]];
-                        if (choIdx === undefined) {
-                            // 한글 자음이 아니면 숫자 등으로 취급
-                            finalStr += parts[currentIdx];
-                            currentIdx++;
-                            continue;
+                let syllables = block.split('.');
+                syllables.forEach(syllable => {
+                    let parts = syllable.split(',');
+                    let pIdx = 0;
+                    while (pIdx < parts.length) {
+                        let choIdx = revInitial[parts[pIdx]];
+                        if (choIdx === undefined) { finalStr += parts[pIdx]; pIdx++; continue; }
+
+                        let jungIdx = undefined;
+                        let vStep = 0;
+
+                        // 중성 찾기 우선순위: 2개 조합(ㅘ 등) -> 1개
+                        if (pIdx + 2 < parts.length) {
+                            let v2 = parts[pIdx + 1] + ',' + parts[pIdx + 2];
+                            if (revVowel[v2] !== undefined) { jungIdx = revVowel[v2]; vStep = 2; }
+                        }
+                        if (jungIdx === undefined && pIdx + 1 < parts.length) {
+                            let v1 = parts[pIdx + 1];
+                            if (revVowel[v1] !== undefined) { jungIdx = revVowel[v1]; vStep = 1; }
                         }
 
-                        let vStr = parts[currentIdx + 1];
-                        let vStep = 1;
-                        if (currentIdx + 2 < parts.length && revVowel[parts[currentIdx + 1] + ',' + parts[currentIdx + 2]] !== undefined) {
-                            vStr = parts[currentIdx + 1] + ',' + parts[currentIdx + 2];
-                            vStep = 2;
-                        }
-
-                        let jungIdx = revVowel[vStr];
-                        if (jungIdx === undefined) {
-                            finalStr += parts[currentIdx];
-                            currentIdx++;
-                            continue;
-                        }
+                        if (jungIdx === undefined) { finalStr += parts[pIdx]; pIdx++; continue; }
 
                         let jongIdx = 0;
-                        if (parts[currentIdx + 1 + vStep] && revFinal[parts[currentIdx + 1 + vStep]] !== undefined && revInitial[parts[currentIdx + 1 + vStep]] === undefined) {
-                            jongIdx = revFinal[parts[currentIdx + 1 + vStep]];
-                            currentIdx += (2 + vStep);
-                        } else {
-                            currentIdx += (1 + vStep);
-                        }
+                        // 종성 판단: 현재 음절(parts)의 끝이고, 종성 맵에 존재할 때만 종성으로 인정
+                        if (pIdx + vStep + 1 < parts.length) {
+                            let possibleJong = parts[pIdx + vStep + 1];
+                            if (revFinal[possibleJong] !== undefined) {
+                                jongIdx = revFinal[possibleJong];
+                                pIdx += (vStep + 2);
+                            } else { pIdx += (vStep + 1); }
+                        } else { pIdx += (vStep + 1); }
 
                         finalStr += String.fromCharCode(0xAC00 + (choIdx * 588) + (jungIdx * 28) + jongIdx);
                     }
-                } catch (e) { finalStr += token.value; }
-            }
+                });
+            });
             document.getElementById('result').innerText = finalStr;
         }
-    </script>
 
+        function copyResult() {
+            const resultText = document.getElementById('result').innerText;
+            if (!resultText) return;
+            navigator.clipboard.writeText(resultText).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.innerText = "Done";
+                setTimeout(() => { btn.innerText = "Copy"; }, 1500);
+            });
+        }
+    </script>
 </body>
 
 </html>
