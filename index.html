@@ -4,11 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>숫글 변환기 ( Soowim 제작 )</title>
-
-    <link rel="shortcut icon" href="icon.ico" type="image/x-icon">
-    <link rel="icon" href="icon.ico" type="image/x-icon">
-
+    <title>숫글 변환기</title>
     <style>
         * {
             box-sizing: border-box;
@@ -24,181 +20,280 @@
             display: flex;
             justify-content: center;
             padding: 20px;
+            overflow: hidden;
+        }
+
+        #pizzaCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
         }
 
         .container {
             width: 100%;
             max-width: 600px;
-            margin-top: 20px;
             position: relative;
-            padding-bottom: 60px;
+            z-index: 1;
+            height: 95vh;
+            display: flex;
+            flex-direction: column;
         }
 
         h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 2rem;
+            font-size: 1.7rem;
+            font-weight: 700;
+            margin: 20px 0;
             text-align: center;
-            letter-spacing: -0.5px;
             color: #ffffff;
+            flex-shrink: 0;
         }
 
         .section {
             margin-bottom: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 12px;
         }
 
         label {
-            display: block;
             font-size: 0.85rem;
-            font-weight: 500;
-            margin-bottom: 8px;
+            font-weight: 600;
             color: #888;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         textarea {
             width: 100%;
             height: 140px;
-            padding: 14px;
-            border: 1px solid #333;
-            border-radius: 12px;
+            max-height: 250px;
+            padding: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
             font-size: 16px;
-            background-color: #1e1e1e;
+            background-color: rgba(26, 26, 26, 0.9);
             color: #ffffff;
             transition: border-color 0.2s;
             resize: none;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
+            line-height: 1.6;
+            overflow-y: auto;
+            display: block;
+            backdrop-filter: blur(8px);
         }
 
         textarea:focus {
             outline: none;
             border-color: #555;
+            background-color: rgba(30, 30, 30, 0.95);
         }
 
         .btn-group {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin: 20px 0;
+            gap: 14px;
+            margin: 1.5rem 0;
+            flex-shrink: 0;
         }
 
-        button {
+        .main-btn {
             padding: 16px;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             background-color: #ffffff;
             color: #000000;
-            font-size: 0.95rem;
-            font-weight: 600;
+            font-size: 1rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: transform 0.1s;
         }
 
-        button.secondary {
-            background-color: #333;
+        .main-btn.secondary {
+            background-color: #2a2a2a;
             color: #ffffff;
         }
 
-        button:active {
-            opacity: 0.8;
+        .main-btn:active {
+            transform: scale(0.98);
         }
 
         .result-container {
-            margin-top: 2rem;
+            margin-top: 1rem;
             border-top: 1px solid #222;
             padding-top: 1.5rem;
-            position: relative;
+            flex-grow: 1;
+            overflow-y: auto;
+            min-height: 100px;
         }
 
         #result {
-            min-height: 80px;
             white-space: pre-wrap;
             word-break: break-all;
-            font-size: 1.15rem;
+            font-size: 1.25rem;
             font-weight: 500;
             color: #ffffff;
-            padding: 10px 0;
-            padding-right: 60px;
-            letter-spacing: 0.5px;
+            padding: 10px 2px;
         }
 
-        .copy-btn {
-            position: absolute;
-            top: 1.5rem;
-            right: 0;
-            padding: 8px 12px;
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 14px;
             font-size: 0.75rem;
-            background-color: #444;
-            color: #fff;
-            border-radius: 6px;
+            background-color: #222;
+            color: #888;
+            border-radius: 8px;
             border: none;
             cursor: pointer;
+            font-weight: 600;
+        }
+
+        .action-btn.success {
+            background-color: #1e3a2f;
+            color: #4ade80;
         }
 
         footer {
             text-align: center;
-            margin-top: 40px;
+            padding: 20px 0;
             font-size: 0.8rem;
-            color: #555;
-            letter-spacing: 1px;
+            color: #444;
+            flex-shrink: 0;
+        }
+
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background-color: #1e1e1e;
+            color: #fff;
+            padding: 16px 32px;
+            border-radius: 16px;
+            text-align: center;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 1000;
+            pointer-events: none;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            border: 1px solid #333;
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        #toast .main-msg {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        #toast .sub-msg {
+            display: block;
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 4px;
         }
     </style>
 </head>
 
 <body>
 
+    <canvas id="pizzaCanvas"></canvas>
+
+    <div id="toast">
+        <span class="main-msg">영어는 변환되지 않습니다.</span>
+        <span class="sub-msg">( v3.0부터 지원됩니다 )</span>
+    </div>
+
     <div class="container">
-        <h1>🔐 // 숫글 변환기</h1>
-
+        <h1>숫글 변환기</h1>
         <div class="section">
-            <label>Input</label>
-            <textarea id="input" placeholder="내용을 입력하세요..."></textarea>
+            <div class="label-row">
+                <label>입력 내용</label>
+                <div class="action-btns">
+                    <button class="action-btn" onclick="pasteInput()">붙여넣기</button>
+                    <button class="action-btn" onclick="clearAll()">지우기</button>
+                </div>
+            </div>
+            <textarea id="input" placeholder="내용을 입력하세요..." oninput="autoResize(this)"></textarea>
         </div>
-
         <div class="btn-group">
-            <button onclick="toNum()">한글 → 숫글</button>
-            <button class="secondary" onclick="toKor()">숫글 → 한글</button>
+            <button class="main-btn" onclick="toNum()">한글 → 숫글</button>
+            <button class="main-btn secondary" onclick="toKor()">숫글 → 한글</button>
         </div>
-
         <div class="result-container">
-            <label>Result</label>
-            <button class="copy-btn" onclick="copyResult()">Copy</button>
+            <div class="label-row">
+                <label>변환 결과</label>
+                <div class="action-btns">
+                    <button class="action-btn" id="copyBtn" onclick="copyResult()">복사하기</button>
+                </div>
+            </div>
             <div id="result"></div>
         </div>
-
-        <footer>Soowim 제작</footer>
+        <footer>Soowim</footer>
     </div>
 
     <script>
+        const canvas = document.getElementById('pizzaCanvas');
+        const ctx = canvas.getContext('2d');
+        let pizza;
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        resize();
+        class SoloPizza {
+            constructor() { this.size = 50; this.x = Math.random() * (canvas.width - this.size); this.y = Math.random() * (canvas.height - this.size); this.speedX = 3; this.speedY = 3; this.angle = 0; }
+            update() { this.x += this.speedX; this.y += this.speedY; this.angle += 0.05; if (this.x <= 0 || this.x >= canvas.width - this.size) this.speedX *= -1; if (this.y <= 0 || this.y >= canvas.height - this.size) this.speedY *= -1; }
+            draw() { ctx.save(); ctx.translate(this.x + this.size / 2, this.y + this.size / 2); ctx.rotate(this.angle); ctx.font = `${this.size}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🌳', 0, 0); ctx.restore(); }
+        }
+        pizza = new SoloPizza();
+        function animate() { ctx.clearRect(0, 0, canvas.width, canvas.height); pizza.update(); pizza.draw(); requestAnimationFrame(animate); }
+        animate();
+
         const initialMap = { 'ㄱ': '1', 'ㄲ': '011', 'ㄴ': '2', 'ㄷ': '3', 'ㄸ': '033', 'ㄹ': '4', 'ㅁ': '5', 'ㅂ': '6', 'ㅃ': '066', 'ㅅ': '7', 'ㅆ': '077', 'ㅇ': '8', 'ㅈ': '9', 'ㅉ': '099', 'ㅊ': '10', 'ㅋ': '11', 'ㅌ': '12', 'ㅍ': '13', 'ㅎ': '14' };
         const vowelMap = { 'ㅏ': ['01'], 'ㅐ': ['102'], 'ㅑ': ['02'], 'ㅒ': ['103'], 'ㅓ': ['03'], 'ㅔ': ['104'], 'ㅕ': ['04'], 'ㅖ': ['105'], 'ㅗ': ['05'], 'ㅘ': ['05', '01'], 'ㅙ': ['05', '102'], 'ㅚ': ['05', '101'], 'ㅛ': ['06'], 'ㅜ': ['07'], 'ㅝ': ['07', '03'], 'ㅞ': ['07', '104'], 'ㅟ': ['07', '101'], 'ㅠ': ['08'], 'ㅡ': ['09'], 'ㅢ': ['09', '101'], 'ㅣ': ['101'] };
         const finalMap = ['', '1', '011', '17', '2', '29', '214', '3', '4', '41', '45', '46', '47', '412', '413', '414', '5', '6', '67', '7', '077', '8', '9', '10', '11', '12', '13', '14'];
         const CHOSUNG = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
         const JUNGSUNG = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'];
+        const soloJamoMap = { 0x3131: '1', 0x3132: '011', 0x3134: '2', 0x3137: '3', 0x3138: '033', 0x3139: '4', 0x3141: '5', 0x3142: '6', 0x3143: '066', 0x3145: '7', 0x3146: '077', 0x3147: '8', 0x3148: '9', 0x3149: '099', 0x314A: '10', 0x314B: '11', 0x314C: '12', 0x314D: '13', 0x314E: '14' };
+
+        function showToast() { const toast = document.getElementById('toast'); toast.classList.add('show'); setTimeout(() => { toast.classList.remove('show'); }, 2500); }
+        function autoResize(textarea) { textarea.style.height = '140px'; let newHeight = textarea.scrollHeight; textarea.style.height = (newHeight > 250 ? 250 : newHeight) + 'px'; }
+        function clearAll() { const inputArea = document.getElementById('input'); inputArea.value = ""; inputArea.style.height = '140px'; document.getElementById('result').innerText = ""; }
+        async function pasteInput() { try { const text = await navigator.clipboard.readText(); const inputArea = document.getElementById('input'); inputArea.value = text; autoResize(inputArea); } catch (err) { alert("권한이 없습니다."); } }
 
         function toNum() {
             const text = document.getElementById('input').value;
-            let tokens = [];
-            let i = 0;
+            if (/[a-zA-Z]/.test(text)) showToast();
+            let tokens = [], i = 0;
             while (i < text.length) {
-                let char = text[i];
-                let code = char.charCodeAt(0);
+                let char = text[i], code = char.charCodeAt(0);
                 if (code >= 0xAC00 && code <= 0xD7A3) {
-                    let n = code - 0xAC00;
-                    let jong = n % 28;
-                    let jung = ((n - jong) / 28) % 21;
-                    let cho = Math.floor(((n - jong) / 28) / 21);
+                    let n = code - 0xAC00, jong = n % 28, jung = ((n - jong) / 28) % 21, cho = Math.floor(((n - jong) / 28) / 21);
                     let parts = [initialMap[CHOSUNG[cho]], ...vowelMap[JUNGSUNG[jung]]];
                     if (jong > 0) parts.push(finalMap[jong]);
                     tokens.push({ type: 'hangul', value: parts.join(',') });
-                } else if (/[0-9]/.test(char)) {
+                }
+                else if (soloJamoMap[code]) tokens.push({ type: 'hangul', value: soloJamoMap[code] });
+                else if (/[0-9]/.test(char)) {
                     let numStr = "";
                     while (i < text.length && /[0-9]/.test(text[i])) { numStr += text[i]; i++; }
-                    tokens.push({ type: 'number', value: '0' + numStr + '0' });
-                    continue;
-                } else { tokens.push({ type: 'other', value: char }); }
+                    tokens.push({ type: 'number', value: '0' + numStr + '0' }); i--;
+                }
+                else tokens.push({ type: 'other', value: char });
                 i++;
             }
             let output = "";
@@ -206,74 +301,71 @@
                 output += tokens[j].value;
                 if (j < tokens.length - 1) {
                     let curr = tokens[j], next = tokens[j + 1];
-                    if (curr.type === 'hangul' && next.type === 'hangul') output += ".";
-                    else if (curr.type === 'number' && next.type === 'hangul') output += ",";
-                    else if (curr.type === 'hangul' && next.type === 'number') output += ",";
+                    if (curr.type === 'hangul' && next.type === 'hangul') output += (curr.value.includes(',') || next.value.includes(',')) ? "." : ",";
+                    else if ((curr.type === 'number' && next.type === 'hangul') || (curr.type === 'hangul' && next.type === 'number')) output += ",";
                 }
             }
             document.getElementById('result').innerText = output;
         }
 
         function toKor() {
-            let input = document.getElementById('input').value;
-            input = input.replace(/0([0-9]+)0/g, '$1');
+            let rawInput = document.getElementById('input').value;
             const revInitial = Object.fromEntries(Object.entries(initialMap).map(([k, v]) => [v, CHOSUNG.indexOf(k)]));
             const revVowel = Object.fromEntries(Object.entries(vowelMap).map(([k, v]) => [v.join(','), JUNGSUNG.indexOf(k)]));
             const revFinal = Object.fromEntries(finalMap.map((v, i) => [v, i]));
+            const revSolo = Object.fromEntries(Object.entries(soloJamoMap).map(([k, v]) => [v, String.fromCharCode(k)]));
+
+            let input = rawInput.replace(/0([0-9]+)0/g, '##$1##');
 
             let finalStr = "";
-            let blocks = input.split(/([ \n])/);
+            let blocks = input.split(/([0-9,.]+)/);
 
             blocks.forEach(block => {
-                if (block === " " || block === "\n") { finalStr += block; return; }
+                if (!block) return;
 
-                let syllables = block.split('.');
-                syllables.forEach(syllable => {
-                    let parts = syllable.split(',');
-                    let pIdx = 0;
-                    while (pIdx < parts.length) {
-                        let choIdx = revInitial[parts[pIdx]];
-                        if (choIdx === undefined) { finalStr += parts[pIdx]; pIdx++; continue; }
-
-                        let jungIdx = undefined;
-                        let vStep = 0;
-
-                        // 중성 찾기 우선순위: 2개 조합(ㅘ 등) -> 1개
-                        if (pIdx + 2 < parts.length) {
-                            let v2 = parts[pIdx + 1] + ',' + parts[pIdx + 2];
-                            if (revVowel[v2] !== undefined) { jungIdx = revVowel[v2]; vStep = 2; }
-                        }
-                        if (jungIdx === undefined && pIdx + 1 < parts.length) {
-                            let v1 = parts[pIdx + 1];
-                            if (revVowel[v1] !== undefined) { jungIdx = revVowel[v1]; vStep = 1; }
-                        }
-
-                        if (jungIdx === undefined) { finalStr += parts[pIdx]; pIdx++; continue; }
-
-                        let jongIdx = 0;
-                        // 종성 판단: 현재 음절(parts)의 끝이고, 종성 맵에 존재할 때만 종성으로 인정
-                        if (pIdx + vStep + 1 < parts.length) {
-                            let possibleJong = parts[pIdx + vStep + 1];
-                            if (revFinal[possibleJong] !== undefined) {
-                                jongIdx = revFinal[possibleJong];
-                                pIdx += (vStep + 2);
+                if (block.includes('##')) {
+                    finalStr += block.replace(/##/g, '');
+                } else if (/^[0-9,.]+$/.test(block)) {
+                    let syllables = block.split('.');
+                    syllables.forEach((syllable, sIdx) => {
+                        let parts = syllable.split(','), pIdx = 0;
+                        while (pIdx < parts.length) {
+                            if (!parts[pIdx]) { pIdx++; continue; }
+                            let choIdx = revInitial[parts[pIdx]];
+                            if (choIdx === undefined) {
+                                finalStr += revSolo[parts[pIdx]] || parts[pIdx];
+                                pIdx++; continue;
+                            }
+                            let jungIdx = undefined, vStep = 0;
+                            if (pIdx + 2 < parts.length && revVowel[parts[pIdx + 1] + ',' + parts[pIdx + 2]] !== undefined) {
+                                jungIdx = revVowel[parts[pIdx + 1] + ',' + parts[pIdx + 2]]; vStep = 2;
+                            } else if (pIdx + 1 < parts.length && revVowel[parts[pIdx + 1]] !== undefined) {
+                                jungIdx = revVowel[parts[pIdx + 1]]; vStep = 1;
+                            }
+                            if (jungIdx === undefined) { finalStr += revSolo[parts[pIdx]] || parts[pIdx]; pIdx++; continue; }
+                            let jongIdx = 0;
+                            if (pIdx + vStep + 1 < parts.length) {
+                                let possibleJong = parts[pIdx + vStep + 1];
+                                if (revFinal[possibleJong] !== undefined) { jongIdx = revFinal[possibleJong]; pIdx += (vStep + 2); }
+                                else { pIdx += (vStep + 1); }
                             } else { pIdx += (vStep + 1); }
-                        } else { pIdx += (vStep + 1); }
-
-                        finalStr += String.fromCharCode(0xAC00 + (choIdx * 588) + (jungIdx * 28) + jongIdx);
-                    }
-                });
+                            finalStr += String.fromCharCode(0xAC00 + (choIdx * 588) + (jungIdx * 28) + jongIdx);
+                        }
+                    });
+                } else {
+                    finalStr += block;
+                }
             });
             document.getElementById('result').innerText = finalStr;
         }
 
         function copyResult() {
-            const resultText = document.getElementById('result').innerText;
-            if (!resultText) return;
-            navigator.clipboard.writeText(resultText).then(() => {
-                const btn = document.querySelector('.copy-btn');
-                btn.innerText = "Done";
-                setTimeout(() => { btn.innerText = "Copy"; }, 1500);
+            const res = document.getElementById('result').innerText;
+            if (!res) return;
+            navigator.clipboard.writeText(res).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.innerText = "복사 완료!"; btn.classList.add('success');
+                setTimeout(() => { btn.innerText = "복사하기"; btn.classList.remove('success'); }, 1500);
             });
         }
     </script>
